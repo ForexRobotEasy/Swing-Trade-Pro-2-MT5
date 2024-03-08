@@ -1,0 +1,85 @@
+
+//+------------------------------------------------------------------+
+//|                                                     SwingTradePro2 |
+//|                                    https://www.forexroboteasy.com |
+//|                                                    Forex Robot Easy |
+//+------------------------------------------------------------------+
+//| This Expert Advisor trades the Forex market using a trend-searching|
+//| algorithm based on three moving averages. It enters long trades   |
+//| when the price is above the MA and the second MA crosses the third|
+//| MA from bottom to top. It enters short trades when the price is   |
+//| below the MA and the second MA crosses the third MA from top to   |
+//| bottom. It allows flexible settings for stop loss and take profit |
+//| and provides an option to close trades following a counter signal.|
+//+------------------------------------------------------------------+
+
+// Global variables
+int StopLoss = 100; // default stop loss in points
+int TakeProfit = 200; // default take profit in points
+double RiskRewardRatio = 2.0; // default risk reward ratio
+bool CloseOnCounterSignal = true; // default close on counter signal
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Set stop loss and take profit levels based on risk reward ratio
+   StopLoss = RiskRewardRatio * TakeProfit;
+
+   // Print initial settings
+   Print('Initial Stop Loss: ', StopLoss);
+   Print('Initial Take Profit: ', TakeProfit);
+   Print('Risk Reward Ratio: ', RiskRewardRatio);
+   Print('Close On Counter Signal: ', CloseOnCounterSignal);
+
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   // Perform any necessary cleanup here
+}
+
+//+------------------------------------------------------------------+
+//| Expert start function                                            |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // Check if the price is above the MA and the second MA crosses the third MA from bottom to top
+   if (Close[0] > iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE) &&
+       iMA(NULL, 0, 7, 0, MODE_SMA, PRICE_CLOSE) > iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE))
+   {
+      // Place long trade
+      OrderSend(Symbol(), OP_BUY, 1.0, Ask, 10, Bid - StopLoss * Point, Bid + TakeProfit * Point);
+   }
+   // Check if the price is below the MA and the second MA crosses the third MA from top to bottom
+   else if (Close[0] < iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE) &&
+            iMA(NULL, 0, 7, 0, MODE_SMA, PRICE_CLOSE) < iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE))
+   {
+      // Place short trade
+      OrderSend(Symbol(), OP_SELL, 1.0, Bid, 10, Ask + StopLoss * Point, Ask - TakeProfit * Point);
+   }
+   // Check if close on counter signal is enabled
+   else if (CloseOnCounterSignal)
+   {
+      // Close existing trades if a counter signal is detected
+      if (Close[1] > iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE) &&
+          iMA(NULL, 0, 7, 0, MODE_SMA, PRICE_CLOSE) < iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE))
+      {
+         // Close long trades
+         OrderClose(OrderTicket(), OrderLots(), Bid, 10, Red);
+      }
+      else if (Close[1] < iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE) &&
+               iMA(NULL, 0, 7, 0, MODE_SMA, PRICE_CLOSE) > iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE))
+      {
+         // Close short trades
+         OrderClose(OrderTicket(), OrderLots(), Ask, 10, Red);
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
